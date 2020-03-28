@@ -39,5 +39,57 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // A-instruction: 0xxxxxxxxxxxxxxx
+    // C-instruction: 111accccccdddjjj
+    //
+    // instruction[12] (a) - A/M register selector
+    //
+    // destinations:
+    // d1 | instruction[5] | A
+    // d2 | instruction[4] | D
+    // d3 | instruction[3] | M
+    //
+    // jumps
+    // j1 | instruction[2] | <0
+    // j2 | instruction[1] | =0
+    // j3 | instruction[0] | >0
+
+
+    // ARegister
+    Not(in=instruction[15], out=isAInstruction);
+    Mux16(a=ALUout1, b=instruction, sel=isAInstruction, out=ARegisterIn);
+    Or(a=isAInstruction, b=instruction[5], out=setARegister);
+    ARegister(in=ARegisterIn, load=setARegister, out=A1, out=A2, out[0..14]=addressM);
+
+    // DRegister
+    And(a=instruction[15], b=instruction[4], out=loadD);
+    DRegister(in=ALUout2, load=loadD, out=D);
+
+    // ALU
+    Mux16(a=A1, b=inM, sel=instruction[12], out=AorM);
+    ALU(x=D,
+        y=AorM,
+        zx=instruction[11],
+        nx=instruction[10],
+        zy=instruction[9],
+        ny=instruction[8],
+        f=instruction[7],
+        no=instruction[6],
+        zr=eq,
+        ng=lt,
+        out=ALUout1,
+        out=ALUout2,
+        out=outM);
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+    // PC
+    Or(a=lt, b=eq, out=le);
+    Not(in=le, out=gt);
+    And(a=instruction[2], b=lt, out=ltJmp);
+    And(a=instruction[1], b=eq, out=eqJmp);
+    And(a=instruction[0], b=gt, out=gtJmp);
+    Or(a=ltJmp, b=eqJmp, out=leJmp);
+    Or(a=leJmp, b=gtJmp, out=anyJmp);
+    And(a=instruction[15], b=anyJmp, out=jmp);
+    PC(in=A2, load=jmp, reset=reset, inc=true, out[0..14]=pc);
 }
