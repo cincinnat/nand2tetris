@@ -1,0 +1,47 @@
+%import common.CNAME
+%import common.INT
+%import common.WS
+
+%ignore WS
+
+
+start: _line*
+_line: _COMMENT | (_command _COMMENT?)
+
+_command: label | a_instruction | c_instruction
+
+label: "(" VAR ")"
+a_instruction: "@" VAR
+c_instruction: [dest "="] comp [";" jmp]
+
+dest: register+
+comp: op
+!jmp: "JLT" | "JLE" | "JEQ" | "JNE" | "JGE" | "JGT" | "JMP"
+
+op: op_const
+  | op_lone_register
+  | op_negate
+  | op_not
+  | op_inc
+  | op_dec
+  | op_sum
+  | op_diff
+  | op_and
+  | op_or
+
+
+!op_const: "0" | "1" | "-1"
+op_lone_register: register
+op_negate: "-" register
+op_not: "!" register
+op_inc: register "+" "1"
+op_dec: register "-" "1"
+op_sum: register "+" register
+op_diff: register "-" register
+op_and: register "&" register
+op_or: register "|" register
+
+!register: "A" | "M" | "D"
+
+_COMMENT: "//" /.*/
+VAR: CNAME | INT

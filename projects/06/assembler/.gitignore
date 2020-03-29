@@ -1,0 +1,5 @@
+*sw[po]
+build/
+*.egg-info/
+__pycache__/
+.eggs/
