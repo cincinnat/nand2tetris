@@ -1,14 +1,16 @@
 %import common.CNAME
 %import common.INT
 %import common.WS
+%import common.NEWLINE
 
 %ignore WS
 
 
 start: _line*
-_line: _COMMENT | (_command _COMMENT?)
+_line: (_COMMENT | (_command _COMMENT?)) _NL
+_NL: NEWLINE
 
-_command: label | a_instruction | c_instruction
+_command: (label | a_instruction | c_instruction)
 
 label: "(" VAR ")"
 a_instruction: "@" VAR
@@ -43,5 +45,5 @@ op_or: register "|" register
 
 !register: "A" | "M" | "D"
 
-_COMMENT: "//" /.*/
+_COMMENT: "//" /[^\n]*/
 VAR: CNAME | INT
