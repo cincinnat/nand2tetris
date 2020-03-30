@@ -94,7 +94,8 @@ class AstTransformer(Transformer):
 class Parser:
     def __init__(self):
         self._grammar = self._load_grammar()
-        self._parser = Lark(self._grammar, propagate_positions=True)
+        self._parser = Lark(self._grammar, parser='lalr',
+            propagate_positions=True)
 
 
     def parse(self, contents, print_tree=False):

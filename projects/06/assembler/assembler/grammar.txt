@@ -1,8 +1,9 @@
 %import common.INT
-%import common.WS
+%import common.WS_INLINE
 %import common.NEWLINE
-%ignore WS
 %import common.DIGIT
+
+%ignore WS_INLINE
 
 
 start: _line*
