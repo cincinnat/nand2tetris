@@ -1,9 +1,8 @@
-%import common.CNAME
 %import common.INT
 %import common.WS
 %import common.NEWLINE
-
 %ignore WS
+%import common.DIGIT
 
 
 start: _line*
@@ -46,4 +45,6 @@ op_or: register "|" register
 !register: "A" | "M" | "D"
 
 _COMMENT: "//" /[^\n]*/
-VAR: CNAME | INT
+_NONDIGIT_CHAR: /[a-zA-Z:$_\.]/
+_NAME: _NONDIGIT_CHAR+ (_NONDIGIT_CHAR | DIGIT)*
+VAR: _NAME | INT
