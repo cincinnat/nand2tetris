@@ -97,14 +97,19 @@ class Parser:
         self._parser = Lark(self._grammar, propagate_positions=True)
 
 
-    def parse(self, contents):
+    def parse(self, contents, print_tree=False):
         tree = self._parser.parse(contents)
+        if print_tree:
+            print('--------AST----------')
+            print(tree.pretty())
+            print('---------------------')
+
         return AstTransformer().transform(tree)
 
 
-    def parse_file(self, path):
+    def parse_file(self, path, print_tree=False):
         with open(path) as f:
-            return self.parse(f.read())
+            return self.parse(f.read(), print_tree=print_tree)
 
 
     def _load_grammar(self):
