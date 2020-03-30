@@ -159,6 +159,8 @@ class Compiler:
             op = arg
         elif op == 'val':
             op = arg
+        elif op == '!':
+            op = f'!{arg}'
         elif op == 'neg':
             op = f'-{arg}'
         elif op == 'inc':
