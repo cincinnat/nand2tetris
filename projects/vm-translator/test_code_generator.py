@@ -621,9 +621,8 @@ def test_label(vm):
     )
     vm.execute(code, 100)
 
-    assert vm.symbols['<output>.name1'] == 0
-    assert vm.symbols['<output>.name2'] == 1
-    assert vm.ram == {}
+    assert vm.symbols['<output>$name1'] == 0
+    assert vm.symbols['<output>$name2'] == 1
 
 
 def test_goto(vm):
@@ -668,7 +667,27 @@ def test_if_goto(vm):
 
 
 def test_label_within_function(vm):
-    raise NotImplementedError
+    g = CodeGenerator()
+    code = g.translate([
+            (0, 'call', 'fn', 0),
+            (1, 'goto', 'end'),
+            (2, 'function', 'fn', 0),
+            (5, 'push', 'constant', 0),
+            (3, 'goto', 'end'),
+            (4, 'label', 'label1'),
+            (6, 'return'),
+            (4, 'label', 'end'),
+            (6, 'return'),
+            (7, 'label', 'end'),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 500)
+
+    assert '<input>$end' in vm.symbols
+    assert '<input>$fn$label1' in vm.symbols
+    assert '<input>$fn$end' in vm.symbols
 
 
 def test_function_statement(vm):

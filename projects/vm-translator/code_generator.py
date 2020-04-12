@@ -7,8 +7,8 @@ import keywords as kw
 class _Ops:
     def __init__(self, filename=None):
         self.filename = filename
+        self.function_name = None
         self.__idx = 0
-        self.__current_function = []
 
     def __format(self, text):
         lines = filter(bool, map(str.strip, text.split('\n')))
@@ -275,17 +275,15 @@ class _Ops:
             M=D
         '''
 
-    def _label(self, name):
-        assert self.__current_function
-        return f'''
-            ({self.__current_function[-1]}${name})
-        '''
-
     def __label_name(self, name):
-        if self.__current_function:
-            return '{self.__current_function[-1]}${name}'
-        else:
-            return name
+        label_name = [self.filename, self.function_name, name]
+        label_name = filter(bool, label_name)
+        return '$'.join(label_name)
+
+    def _label(self, name):
+        return f'''
+            ({self.__label_name(name)})
+        '''
 
     def _goto(self, label):
         return f'''
@@ -305,7 +303,6 @@ class _Ops:
         '''
 
     def _function(self, name, local_size):
-        self.__current_function.append(name)
         return f'''
             // function {name} {local_size}
             ({name})
@@ -331,9 +328,6 @@ class _Ops:
         '''
 
     def _return(self):
-        assert self.__current_function
-        self.__current_function.pop()
-
         def restore(ptr):
             return f'''
                 // *{ptr} = *(--LCL)
@@ -445,6 +439,60 @@ class CodeGenerator:
         return code
 
     def _traslate(self, commands):
-        # [(lineno, command...)]
-        for command in commands:
+        # [(lineno, *command)]
+        commands = self.__detect_functions(commands)
+        for function_name, command in commands:
+            self.__ops.function_name = function_name
             yield self.__ops(*command[1:])
+
+
+    def __detect_functions(self, commands):
+        command_buffer = []
+        def command_iterator(commands):
+            for command in commands:
+                yield command
+                while command_buffer:
+                    yield command_buffer.pop()
+            while True:
+                if command_buffer:
+                    while command_buffer:
+                        yield command_buffer.pop()
+                else:
+                    yield None
+
+        def find_body_size(command_list):
+            for i, command in enumerate(reversed(command_list)):
+                # (lineno, return)
+                if command[1] == 'return':
+                    return len(command_list) - i
+            return len(command_list)
+
+        def get_function_body(it):
+            body = []
+            for command in it:
+                if command is None:
+                    break
+                if command[1] == 'function':
+                    command_buffer.append(command)
+                    break
+                body.append(command)
+
+            i = find_body_size(body)
+            command_buffer.extend(body[i:])
+            return body[:i]
+
+        it = command_iterator(commands)
+        for command in it:
+            if command is None:
+                break
+            assert len(command) > 1, command
+            if command[1] == 'function':
+                # (lineno, function, <name>, <nargs>)
+                function_name = command[2]
+                body = get_function_body(it)
+
+                yield function_name, command
+                for item in body:
+                    yield function_name, item
+            else:
+                yield None, command
