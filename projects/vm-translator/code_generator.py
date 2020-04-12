@@ -9,7 +9,7 @@ class _Ops:
         self.resolve_contants = resolve_contants
         self.__idx = 0
 
-    def __strip(self, text):
+    def __format(self, text):
         lines = filter(bool, map(str.strip, text.split('\n')))
 
         def resolve_contants(command):
@@ -62,37 +62,37 @@ class _Ops:
     def __call__(self, op, *args):
         self.__idx += 1
         op = getattr(self, f'_{op}')
-        return op(*args)
+        return self.__format(op(*args))
 
     def _add(self):
-        return self.__strip(f'''
+        return f'''
             // add
             {self.__move_to_stack_top()}
             D=M
             A=A-1
             M=D+M
             {self.__dec_stack_size()}
-        ''')
+        '''
 
     def _sub(self):
-        return self.__strip(f'''
+        return f'''
             // sub
             {self.__move_to_stack_top()}
             D=M
             A=A-1
             M=M-D
             {self.__dec_stack_size()}
-        ''')
+        '''
 
     def _neg(self):
-        return self.__strip(f'''
+        return f'''
             // neg
             {self.__move_to_stack_top()}
             M=-M
-        ''')
+        '''
 
     def _eq(self):
-        return self.__strip(f'''
+        return f'''
             // eq
             {self.__move_to_stack_top()}
             D=M
@@ -108,7 +108,7 @@ class _Ops:
             (__EQ_END__)
             {self.__dec_stack_size_and_move_on_top()}
             M=D
-        ''')
+        '''
 
     def __cmp_ne(self, prefix, lt=True):
         return f'''
@@ -165,43 +165,43 @@ class _Ops:
         '''
 
     def _gt(self):
-        return self.__strip(f'''
+        return f'''
             // gt
             {self.__cmp_ne("GT", lt=False)}
-        ''')
+        '''
 
     def _lt(self):
-        return self.__strip(f'''
+        return f'''
             // lt
             {self.__cmp_ne("LT", lt=True)}
-        ''')
+        '''
 
     def _and(self):
-        return self.__strip(f'''
+        return f'''
             // and
             {self.__move_to_stack_top()}
             D=M
             A=A-1
             M=D&M
             {self.__dec_stack_size()}
-        ''')
+        '''
 
     def _or(self):
-        return self.__strip(f'''
+        return f'''
             // or
             {self.__move_to_stack_top()}
             D=M
             A=A-1
             M=D|M
             {self.__dec_stack_size()}
-        ''')
+        '''
 
     def _not(self):
-        return self.__strip(f'''
+        return f'''
             // not
             {self.__move_to_stack_top()}
             M=!M
-        ''')
+        '''
 
     def _push(self, segment, value):
         if segment == 'static':
@@ -233,12 +233,12 @@ class _Ops:
         else:
             raise NotImplementedError(f'push {segment}')
 
-        return self.__strip(f'''
+        return f'''
             // push
             {read_value}
             {self.__inc_stack_size_and_move_on_top()}
             M=D
-        ''')
+        '''
 
     def _pop(self, segment, value):
         assert segment != 'constant'
