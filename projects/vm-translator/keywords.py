@@ -44,13 +44,26 @@ arithmetic_commands = {
         'not',
     }
 
-
 memory_access_commands = {
         'push',
         'pop',
     }
 
+branching_commands = {
+        'label',
+        'goto',
+        'if-goto',
+    }
+
+function_commands = {
+        'function',
+        'call',
+        'return',
+    }
+
 commands = {
     *arithmetic_commands,
     *memory_access_commands,
+    *branching_commands,
+    *function_commands,
 }
