@@ -25,7 +25,7 @@ class _Ops:
             if command.startswith('@__'):  # @__XXX__
                 assert command.endswith('__'), command
                 return f'{command}.{self.__idx}'
-            if command.startswith('('):    # (__XXX__)
+            if command.startswith('(__'):    # (__XXX__)
                 assert command.endswith('__)'), command
                 return f'({command[1:-1]}.{self.__idx})'
             return command
@@ -61,7 +61,7 @@ class _Ops:
 
     def __call__(self, op, *args):
         self.__idx += 1
-        op = getattr(self, f'_{op}')
+        op = getattr(self, f'_{op}'.replace('-', '_'))
         return self.__format(op(*args))
 
     def _add(self):
@@ -282,6 +282,37 @@ class _Ops:
             A=M
             M=D
         '''
+
+    def _label(self, name):
+        return f'''
+            ({self.filename}.{name})
+        '''
+
+    def _goto(self, label):
+        return f'''
+            // goto {label}
+            @{self.filename}.{label}
+            0; JMP
+        '''
+
+    def _if_goto(self, label):
+        return f'''
+            // if-goto {label}
+            {self.__move_to_stack_top()}
+            D=M
+            {self.__dec_stack_size()}
+            @{self.filename}.{label}
+            D; JNE
+        '''
+
+    def _function(self, function, name, local_size):
+        raise NotImplementedError('function')
+
+    def _return(self):
+        raise NotImplementedError('return')
+
+    def _call(self, name, n_args):
+        raise NotImplementedError('call')
 
 
 class CodeGenerator:

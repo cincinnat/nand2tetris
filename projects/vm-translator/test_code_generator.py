@@ -608,3 +608,60 @@ def test_eq(vm, a, b, expected):
         vm.stack_offset + 0: expected,
         vm.stack_offset + 1: b,
     }
+
+
+def test_label(vm):
+    g = CodeGenerator()
+    code = g.translate([
+            (0, 'label', 'name1'),
+            (1, 'label', 'name2'),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 100)
+
+    assert vm.symbols['<output>.name1'] == 0
+    assert vm.symbols['<output>.name2'] == 1
+    assert vm.ram == {}
+
+
+def test_goto(vm):
+    g = CodeGenerator()
+    code = g.translate([
+            (0, 'push', 'constant', 10),
+            (1, 'goto', 'end'),
+            (2, 'push', 'constant', 20),
+            (3, 'label', 'end'),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 100)
+
+    assert vm.ram == {
+        vm.symbols['SP']: vm.stack_offset + 1,
+        vm.stack_offset + 0: 10,
+    }
+
+
+def test_if_goto(vm):
+    g = CodeGenerator()
+    code = g.translate([
+            (0, 'push', 'constant', 0),
+            (1, 'if-goto', 'end'),
+            (2, 'push', 'constant', 10),
+            (1, 'if-goto', 'end'),
+            (2, 'push', 'constant', 20),
+            (1, 'if-goto', 'end'),
+            (3, 'label', 'end'),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 100)
+
+    assert vm.ram == {
+        vm.symbols['SP']: vm.stack_offset,
+        vm.stack_offset + 0: 10,
+    }
