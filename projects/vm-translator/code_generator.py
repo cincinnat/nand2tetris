@@ -1,33 +1,25 @@
 import os
+import re
 
 import keywords as kw
 
 
 class _Ops:
-    def __init__(self, filename, resolve_contants=False):
+    def __init__(self, filename=None):
         self.filename = filename
-        self.resolve_contants = resolve_contants
         self.__idx = 0
+        self.__current_function = []
 
     def __format(self, text):
         lines = filter(bool, map(str.strip, text.split('\n')))
 
-        def resolve_contants(command):
-            if command.startswith('@'):
-                val = command[1:]
-                val = kw.constants.get(val, val)
-                return f'@{val}'
-            return command
-        if self.resolve_contants:
-            lines = map(resolve_contants)
-
         def enumerate_labels(command):
-            if command.startswith('@__'):  # @__XXX__
-                assert command.endswith('__'), command
-                return f'{command}.{self.__idx}'
-            if command.startswith('(__'):    # (__XXX__)
-                assert command.endswith('__)'), command
-                return f'({command[1:-1]}.{self.__idx})'
+            # @__XXX__ [// comment]
+            if re.match(r'@__[^\s]+__(\s*//.*)?', command):
+                return re.sub(r'@__([^s]+)__', fr'@__\1.{self.__idx}__', command)
+            # (__XXX__) [// comment]
+            if re.match(r'\(__[^\s]+__\)(\s*//.*)?', command):
+                return re.sub(r'\(__([^s]+)__\)', fr'(__\1.{self.__idx}__)', command)
             return command
         lines = map(enumerate_labels, lines)
 
@@ -284,14 +276,21 @@ class _Ops:
         '''
 
     def _label(self, name):
+        assert self.__current_function
         return f'''
-            ({self.filename}.{name})
+            ({self.__current_function[-1]}${name})
         '''
+
+    def __label_name(self, name):
+        if self.__current_function:
+            return '{self.__current_function[-1]}${name}'
+        else:
+            return name
 
     def _goto(self, label):
         return f'''
             // goto {label}
-            @{self.filename}.{label}
+            @{self.__label_name(label)}
             0; JMP
         '''
 
@@ -301,24 +300,143 @@ class _Ops:
             {self.__move_to_stack_top()}
             D=M
             {self.__dec_stack_size()}
-            @{self.filename}.{label}
+            @{self.__label_name(label)}
             D; JNE
         '''
 
-    def _function(self, function, name, local_size):
-        raise NotImplementedError('function')
+    def _function(self, name, local_size):
+        self.__current_function.append(name)
+        return f'''
+            // function {name} {local_size}
+            ({name})
+
+            // initialize the local segment with 0s
+            @{local_size}
+            D=A
+            @R13
+            M=D
+
+            (__FN_ZERO_LOCAL__)  // while D > 0
+            @__FN_START__
+            D; JEQ  // D = R13
+            {self.__inc_stack_size_and_move_on_top()}
+            M=0
+            @R13
+            M=M-1
+            D=M
+            @__FN_ZERO_LOCAL__
+            0; JMP
+
+            (__FN_START__)
+        '''
 
     def _return(self):
-        raise NotImplementedError('return')
+        assert self.__current_function
+        self.__current_function.pop()
 
-    def _call(self, name, n_args):
-        raise NotImplementedError('call')
+        def restore(ptr):
+            return f'''
+                // *{ptr} = *(--LCL)
+                @LCL
+                M=M-1
+                A=M
+                D=M
+                @{ptr}
+                M=D
+            '''
+
+        return f'''
+            // return
+            @5
+            D=A
+            @LCL
+            A=M-D
+            D=M
+            @R13      // 1. set R13 = return address (= *(LCL-5))
+            M=D
+
+            {self.__move_to_stack_top()}
+            D=M
+            @ARG
+            A=M
+            M=D      // 2. set ARG[0] = return value
+
+            @ARG
+            D=M+1
+            @SP
+            M=D      // 3. set SP = ARG + 1
+
+            // 4. set THAT = *(LCL - 1)
+            {restore("THAT")}
+            // 5. set THIS = *(LCL - 2)
+            {restore("THIS")}
+            // 6. set ARG = *(LCL - 3)
+            {restore("ARG")}
+            // 7. set LCL = *(LCL - 3)
+            {restore("LCL")}
+
+            @R13
+            A=M      // 8. goto return address
+            0; JMP
+        '''
+
+    def _call(self, function, n_args):
+        i = self.__idx
+        self.__idx += 1
+
+        def push(ptr):
+            return f'''
+                @{ptr}
+                D=M
+                {self.__inc_stack_size_and_move_on_top()}
+                M=D
+            '''
+
+        return f'''
+            // call {function} {n_args}
+            @{function}$ret.{i}
+            D=A
+            {self.__inc_stack_size_and_move_on_top()}
+            M=D      // 1. push return address
+
+            // 2. push LCL
+            {push("LCL")}
+            // 3. push ARG
+            {push("ARG")}
+            // 4. push THIS
+            {push("THIS")}
+            // 5. push THAT
+            {push("THAT")}
+
+            @SP
+            D=M
+            @{n_args}
+            D=D-A
+            @5
+            D=D-A
+            @ARG
+            M=D      // 6. ARG = SP - n_args - 5
+
+            @SP
+            D=M
+            @LCL
+            M=D      // 7. LCL = SP
+
+            @{function}
+            0; JMP   // 8. goto function
+            ({function}$ret.{i})
+        '''
 
 
 class CodeGenerator:
+    def __init__(self):
+        self.__ops = _Ops()
+
     def translate(self, commands, output, dry_run=False):
         filename = os.path.splitext(os.path.basename(output))[0]
-        code_blocks = self._traslate(filename, commands)
+
+        self.__ops.filename = filename
+        code_blocks = self._traslate(commands)
         code = '\n'.join(code_blocks)
 
         if not dry_run:
@@ -326,8 +444,7 @@ class CodeGenerator:
                 f.write(code)
         return code
 
-    def _traslate(self, filename, commands):
-        ops = _Ops(filename)
+    def _traslate(self, commands):
         # [(lineno, command...)]
         for command in commands:
-            yield ops(*command[1:])
+            yield self.__ops(*command[1:])

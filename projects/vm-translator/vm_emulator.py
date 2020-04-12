@@ -1,5 +1,4 @@
 import collections
-import ctypes
 import keywords as kw
 
 
@@ -16,7 +15,7 @@ class VMEmulator:
 
     def reset(self):
         self.pc = 0
-        self.ram = collections.defaultdict(ctypes.c_int16)
+        self.ram = collections.defaultdict(int)
         self.A = 0
         self.D = 0
         self.symbols = dict(**kw.constants)
@@ -56,8 +55,8 @@ class VMEmulator:
         instructions = prog.split('\n')
         parsed = []
         for instruction in instructions:
-            instruction = instruction.strip()
             instruction = instruction.split('//')[0]
+            instruction = instruction.strip()
             if instruction:
                 parsed.append(instruction)
         return parsed
@@ -142,14 +141,16 @@ class VMEmulator:
                 cmd = str(value)
             if jmp:
                 cmd = f'{cmd}; {jmp}'
-            print(f'#> {pc:02d}: {cmd} \t // {instruction}')
+            print(f'#> {pc:03d}: {cmd} \t // {instruction}')
 
 
     def __print_a_instruction(self, pc, instruction, address):
         if self.trace:
-            print(f'#> {pc:02d}: @{address} \t // {instruction}')
+            value = self.ram.get(self.symbols.get(instruction[1:], None), None)
+            value = f' (={value})' if value is not None else ''
+            print(f'#> {pc:03d}: @{address} \t // {instruction}{value}')
 
 
     def __print_label(self, pc, instruction):
         if self.trace:
-            print(f'#> {pc:02d}: {instruction}')
+            print(f'#> {pc:03d}: {instruction}')

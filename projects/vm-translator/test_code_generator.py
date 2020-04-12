@@ -665,3 +665,182 @@ def test_if_goto(vm):
         vm.symbols['SP']: vm.stack_offset,
         vm.stack_offset + 0: 10,
     }
+
+
+def test_label_within_function(vm):
+    raise NotImplementedError
+
+
+def test_function_statement(vm):
+    local_segment_size = 2
+    initial_sp = 512
+    vm.ram[vm.symbols['SP']] = initial_sp
+    vm.ram[vm.symbols['LCL']] = vm.ram[vm.symbols['SP']]
+
+    g = CodeGenerator()
+    code = g.translate([
+            (0, 'function', 'fn', local_segment_size),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 100)
+
+    assert vm.symbols['fn'] == 0
+    assert vm.ram == {
+        vm.symbols['SP']: initial_sp + local_segment_size,
+        vm.symbols['LCL']: initial_sp,
+        initial_sp + 0: 0,
+        initial_sp + 1: 0,
+    }
+
+
+def test_return_statement(vm):
+    n_args = 3
+    frame_offset = 512
+    current_sp = frame_offset + 100
+    arg1 = 111
+    arg2 = 222
+    arg3 = 333
+    caller_arg = 254
+    caller_lcl = caller_arg + 5
+    caller_this = 1234
+    caller_that = 2345
+    return_addr = 6000
+    return_value = 42
+
+    vm.ram[frame_offset + 0] = arg1
+    vm.ram[frame_offset + 1] = arg2
+    vm.ram[frame_offset + 2] = arg3
+    vm.ram[frame_offset + 3] = return_addr
+    vm.ram[frame_offset + 4] = caller_lcl
+    vm.ram[frame_offset + 5] = caller_arg
+    vm.ram[frame_offset + 6] = caller_this
+    vm.ram[frame_offset + 7] = caller_that
+    vm.ram[current_sp - 1] = return_value
+
+    vm.ram[vm.symbols['LCL']] = frame_offset + n_args + 5
+    vm.ram[vm.symbols['ARG']] = frame_offset
+    vm.ram[vm.symbols['THIS']] = 5555
+    vm.ram[vm.symbols['THAT']] = 6666
+    vm.ram[vm.symbols['SP']] = current_sp
+
+    g = CodeGenerator()
+    g.translate([
+            (0, 'function', 'fn', 0),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    code = g.translate([
+            (0, 'return'),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 100)
+
+    assert vm.ram == {
+        vm.symbols['SP']: frame_offset + 1,
+        vm.symbols['LCL']: caller_lcl,
+        vm.symbols['ARG']: caller_arg,
+        vm.symbols['THIS']: caller_this,
+        vm.symbols['THAT']: caller_that,
+
+        frame_offset + 0: return_value,
+        frame_offset + 1: arg2,
+        frame_offset + 2: arg3,
+        frame_offset + 3: return_addr,
+        frame_offset + 4: caller_lcl,
+        frame_offset + 5: caller_arg,
+        frame_offset + 6: caller_this,
+        frame_offset + 7: caller_that,
+        current_sp - 1: return_value,
+    }
+
+
+def test_call_statement(vm):
+    caller_arg = 254
+    caller_lcl = caller_arg + 5
+    caller_this = 1234
+    caller_that = 2345
+    caller_sp = 512
+
+    n_args = 3
+    arg1 = 111
+    arg2 = 222
+    arg3 = 333
+
+    vm.symbols['fn'] = 8192
+    vm.ram[vm.symbols['SP']] = caller_sp
+    vm.ram[vm.symbols['LCL']] = caller_lcl
+    vm.ram[vm.symbols['ARG']] = caller_arg
+    vm.ram[vm.symbols['THIS']] = caller_this
+    vm.ram[vm.symbols['THAT']] = caller_that
+
+    vm.ram[caller_sp - 3] = arg1
+    vm.ram[caller_sp - 2] = arg2
+    vm.ram[caller_sp - 1] = arg3
+
+    g = CodeGenerator()
+    code = g.translate([
+            (0, 'call', 'fn', n_args),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 100)
+
+    assert vm.ram == {
+        vm.symbols['SP']: caller_sp + 5,
+        vm.symbols['LCL']: caller_sp + 5,
+        vm.symbols['ARG']: caller_sp - n_args,
+        vm.symbols['THIS']: caller_this,
+        vm.symbols['THAT']: caller_that,
+
+        caller_sp - 3: arg1,
+        caller_sp - 2: arg2,
+        caller_sp - 1: arg3,
+        caller_sp + 0: vm.symbols['fn$ret.1'],
+        caller_sp + 1: caller_lcl,
+        caller_sp + 2: caller_arg,
+        caller_sp + 3: caller_this,
+        caller_sp + 4: caller_that,
+    }
+
+
+def test_function_calls(vm):
+    g = CodeGenerator()
+    code = g.translate([
+            (0,  'call', 'main', 0),
+            (1,  'goto', 'end'),
+
+            (2,  'function', 'main', 0),
+            (3,  'push', 'constant', 10),
+            (4,  'push', 'constant', 20),
+            (5,  'call', 'double-sum', 2),
+            (6,  'return'),
+
+            (7,  'function', 'double-sum', 1),
+            (8,  'push', 'argument', 0),
+            (9,  'push', 'argument', 1),
+            (10, 'add'),
+            (11, 'pop', 'local', 0),
+            (12, 'push', 'local', 0),
+            (13, 'push', 'local', 0),
+            (14, 'add'),
+            (15, 'return'),
+
+            (16, 'label', 'end'),
+        ],
+        output='<output>',
+        dry_run=True,
+    )
+    vm.execute(code, 500)
+
+    assert vm.ram[vm.symbols['SP']] == vm.stack_offset + 1
+    assert vm.ram[vm.stack_offset] == 2 * (10 + 20)
+
+
+def test_program(vm):
+    raise NotImplementedError()
