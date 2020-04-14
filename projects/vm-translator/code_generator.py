@@ -1,4 +1,3 @@
-import os
 import re
 
 import keywords as kw
@@ -55,6 +54,16 @@ class _Ops:
         self.__idx += 1
         op = getattr(self, f'_{op}'.replace('-', '_'))
         return self.__format(op(*args))
+
+    def init_program(self):
+        code = f'''
+            @256
+            D=A
+            @SP
+            M=D
+            {self("call", "Sys.init", 0)}
+        '''
+        return self.__format(code)
 
     def _add(self):
         return f'''
@@ -426,25 +435,19 @@ class CodeGenerator:
     def __init__(self):
         self.__ops = _Ops()
 
-    def translate(self, commands, output, dry_run=False):
-        filename = os.path.splitext(os.path.basename(output))[0]
-
-        self.__ops.filename = filename
-        code_blocks = self._traslate(commands)
+    def translate(self, filename, commands):
+        code_blocks = self.itranslate(filename, commands)
         code = '\n'.join(code_blocks)
-
-        if not dry_run:
-            with open(output, 'wt') as f:
-                f.write(code)
         return code
 
-    def _traslate(self, commands):
-        # [(lineno, *command)]
+    def itranslate(self, filename, commands):
+        # commands = [(lineno, *command)]
+
+        self.__ops.filename = filename
         commands = self.__detect_functions(commands)
         for function_name, command in commands:
             self.__ops.function_name = function_name
             yield self.__ops(*command[1:])
-
 
     def __detect_functions(self, commands):
         command_buffer = []
@@ -496,3 +499,6 @@ class CodeGenerator:
                     yield function_name, item
             else:
                 yield None, command
+
+    def gen_initializer(self):
+        return self.__ops.init_program()

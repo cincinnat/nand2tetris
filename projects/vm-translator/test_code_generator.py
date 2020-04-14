@@ -12,13 +12,12 @@ def vm():
 
 def test_push_constant(vm):
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'constant', 1),
             (1, 'push', 'constant', 10),
             (2, 'push', 'constant', 100),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -36,12 +35,11 @@ def test_push_static(vm):
     vm.ram[static_offset + 1] = 22
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'static', 1),
             (1, 'push', 'static', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -61,12 +59,11 @@ def test_push_local(vm):
     vm.ram[local_offset + 10] = 22
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'local', 1),
             (1, 'push', 'local', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -87,12 +84,11 @@ def test_push_argument(vm):
     vm.ram[argument_offset + 10] = 22
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'argument', 1),
             (1, 'push', 'argument', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -113,12 +109,11 @@ def test_push_this(vm):
     vm.ram[this_offset + 10] = 22
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'this', 1),
             (1, 'push', 'this', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -139,12 +134,11 @@ def test_push_that(vm):
     vm.ram[that_offset + 10] = 22
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'that', 1),
             (1, 'push', 'that', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -163,12 +157,11 @@ def test_push_pointer(vm):
     vm.ram[vm.symbols['R4']] = 22
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'pointer', 0),
             (1, 'push', 'pointer', 1),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -186,12 +179,11 @@ def test_push_temp(vm):
     vm.ram[vm.symbols['R5'] + 3] = 22
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'temp', 1),
             (1, 'push', 'temp', 3),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -211,12 +203,11 @@ def test_pop_static(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'pop', 'static', 1),
             (1, 'pop', 'static', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -237,12 +228,11 @@ def test_pop_local(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'pop', 'local', 1),
             (1, 'pop', 'local', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -264,12 +254,11 @@ def test_pop_argument(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'pop', 'argument', 1),
             (1, 'pop', 'argument', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -291,12 +280,11 @@ def test_pop_this(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'pop', 'this', 1),
             (1, 'pop', 'this', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -318,12 +306,11 @@ def test_pop_that(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'pop', 'that', 1),
             (1, 'pop', 'that', 10),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -344,12 +331,11 @@ def test_pop_pointer(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'pop', 'pointer', 0),
             (1, 'pop', 'pointer', 1),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -369,12 +355,11 @@ def test_pop_temp(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'pop', 'temp', 1),
             (1, 'pop', 'temp', 3),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -393,11 +378,10 @@ def test_add(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'add'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -414,11 +398,10 @@ def test_sub(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'sub'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -434,11 +417,10 @@ def test_neg(vm):
     vm.ram[vm.symbols['SP']] += 1
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'neg'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -454,11 +436,10 @@ def test_and(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'and'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -475,11 +456,10 @@ def test_or(vm):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'or'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -495,11 +475,10 @@ def test_not(vm):
     vm.ram[vm.symbols['SP']] += 1
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'not'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -530,11 +509,10 @@ def test_gt(vm, a, b, expected):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'gt'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -567,11 +545,10 @@ def test_lt(vm, a, b, expected):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'lt'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -595,11 +572,10 @@ def test_eq(vm, a, b, expected):
     vm.ram[vm.symbols['SP']] += 2
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'eq'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, max_steps=100)
 
@@ -612,29 +588,27 @@ def test_eq(vm, a, b, expected):
 
 def test_label(vm):
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'label', 'name1'),
             (1, 'label', 'name2'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 100)
 
-    assert vm.symbols['<output>$name1'] == 0
-    assert vm.symbols['<output>$name2'] == 1
+    assert vm.symbols['<input>$name1'] == 0
+    assert vm.symbols['<input>$name2'] == 1
 
 
 def test_goto(vm):
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'constant', 10),
             (1, 'goto', 'end'),
             (2, 'push', 'constant', 20),
             (3, 'label', 'end'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 100)
 
@@ -646,7 +620,7 @@ def test_goto(vm):
 
 def test_if_goto(vm):
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'push', 'constant', 0),
             (1, 'if-goto', 'end'),
             (2, 'push', 'constant', 10),
@@ -655,8 +629,7 @@ def test_if_goto(vm):
             (1, 'if-goto', 'end'),
             (3, 'label', 'end'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 100)
 
@@ -668,7 +641,7 @@ def test_if_goto(vm):
 
 def test_label_within_function(vm):
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'call', 'fn', 0),
             (1, 'goto', 'end'),
             (2, 'function', 'fn', 0),
@@ -680,8 +653,7 @@ def test_label_within_function(vm):
             (6, 'return'),
             (7, 'label', 'end'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 500)
 
@@ -697,11 +669,10 @@ def test_function_statement(vm):
     vm.ram[vm.symbols['LCL']] = vm.ram[vm.symbols['SP']]
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'function', 'fn', local_segment_size),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 100)
 
@@ -745,17 +716,15 @@ def test_return_statement(vm):
     vm.ram[vm.symbols['SP']] = current_sp
 
     g = CodeGenerator()
-    g.translate([
+    g.translate(commands=[
             (0, 'function', 'fn', 0),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'return'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 100)
 
@@ -802,11 +771,10 @@ def test_call_statement(vm):
     vm.ram[caller_sp - 1] = arg3
 
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0, 'call', 'fn', n_args),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 100)
 
@@ -830,7 +798,7 @@ def test_call_statement(vm):
 
 def test_function_calls(vm):
     g = CodeGenerator()
-    code = g.translate([
+    code = g.translate(commands=[
             (0,  'call', 'main', 0),
             (1,  'goto', 'end'),
 
@@ -852,8 +820,7 @@ def test_function_calls(vm):
 
             (16, 'label', 'end'),
         ],
-        output='<output>',
-        dry_run=True,
+        filename='<input>',
     )
     vm.execute(code, 500)
 
@@ -862,4 +829,19 @@ def test_function_calls(vm):
 
 
 def test_program(vm):
-    raise NotImplementedError()
+    g = CodeGenerator()
+    code = g.gen_initializer()
+    code += '\n' + g.translate(commands=[
+            (0, 'goto', 'end'),
+
+            (1, 'function', 'Sys.init', 0),
+            (2, 'push', 'constant', 0),
+            (3, 'return'),
+
+            (4, 'label', 'end')
+        ],
+        filename='<input>',
+    )
+    vm.execute(code, 500)
+
+    assert vm.ram[vm.symbols['SP']] == vm.stack_offset + 1

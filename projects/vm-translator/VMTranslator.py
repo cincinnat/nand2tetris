@@ -1,34 +1,21 @@
 #! /bin/env python3
 
 import argparse
-import os
 import signal
 import sys
 
-from parser import Parser
-from code_generator import CodeGenerator
-
-
-def translate(source, target, args):
-    p = Parser()
-    commands = p.parse_file(source)
-
-    t = CodeGenerator()
-    output = target if not args.dry_run else None
-    t.translate(commands, output=output, dry_run=args.dry_run)
+from translator import Translator
 
 
 def main(args):
-    for source in args.input:
-        name, _ = os.path.splitext(source)
-        target = name + '.asm'
-        translate(source, target, args)
+    t = Translator()
+    t.translate(args.input, dry_run=args.dry_run)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='a Hack assembler',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('input', nargs='+', help='input files')
+    parser.add_argument('input', help='input files or directory')
     parser.add_argument('--dry-run', '-d', action='store_true',
         help='do not create the output file.')
 
