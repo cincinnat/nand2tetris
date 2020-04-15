@@ -1,0 +1,27 @@
+class Utils {
+    function int lsh(int x, int n) {
+        while (n > 0) {
+            let x = x * 2;
+            let n = n - 1;
+        }
+        return x;
+    }
+
+    function int rsh(int x, int n) {
+        while (n > 0) {
+            let x = x / 2;
+            let n = n - 1;
+        }
+        return x;
+    }
+
+    function int ilog(int x) {
+        var int k;
+        let k = 0;
+        while (x > 0) {
+            let x = x / 2;
+            let k = k + 1;
+        }
+        return k;
+    }
+}
