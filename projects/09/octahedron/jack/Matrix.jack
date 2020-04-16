@@ -1,0 +1,84 @@
+/* A real valued 3x3 matrix class (i.e., all values are assumed
+ * to be of the "real" type).
+ */
+class Matrix {
+    field Array _data;
+
+    constructor Matrix new(
+            int a11, int a12, int a13,
+            int a21, int a22, int a23,
+            int a31, int a32, int a33) {
+        let _data = Array.new(9);
+        let _data[0] = a11;
+        let _data[1] = a12;
+        let _data[2] = a13;
+        let _data[3] = a21;
+        let _data[4] = a22;
+        let _data[5] = a23;
+        let _data[6] = a31;
+        let _data[7] = a32;
+        let _data[8] = a33;
+        return this;
+    }
+
+    method void dispose() {
+        do _data.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    // apply the matrix transformation to a vector
+    //
+    method Vector mul(Vector v) {
+        var Vector res;
+        var int i, j, tmp;
+
+        let i = 0;
+        let res = Vector.new(0, 0, 0);
+        while (i < 3) {
+            let j = 0;
+            let tmp = 0;
+            while (j < 3) {
+                let tmp = Real.add(Real.mul(get(i, j), v.get(j)), tmp);
+                let j = j + 1;
+            }
+            do res.set(i, tmp);
+            let i = i + 1;
+        }
+
+        return res;
+    }
+
+    // matrix mutliplication
+    method Matrix matmul(Matrix other) {
+        var Matrix m;
+        var int i, j, k, tmp;
+
+        let m = Matrix.new(0,0,0, 0,0,0, 0,0,0);
+        let i = 0;
+        while (i < 3) {
+            let j = 0;
+            while (j < 3) {
+                let k = 0;
+                let tmp = 0;
+                while (k < 3) {
+                    let tmp = Real.add(Real.mul(get(i, k), other.get(k, j)), tmp);
+                    let k = k + 1;
+                }
+                do m.set(i, j, tmp);
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return m;
+    }
+
+    method int get(int i, int j) {
+        return _data[(i*3) + j];
+    }
+
+    method void set(int i, int j, int value) {
+        let _data[(i*3) + j] = value;
+        return;
+    }
+}

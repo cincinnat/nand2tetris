@@ -1,0 +1,170 @@
+class Main {
+    function void clear(int x, int y, int size) {
+        do Screen.setColor(0);
+        do Screen.drawRectangle(x-size, y-size, x+size, y+size);
+        return;
+    }
+
+    function void fillTriangle(Array p1, Array p2, Array p3, int color) {
+        var Array tmp;
+        var int step;
+
+        if (p1[1] > p2[1]) {
+            let tmp = p2;
+            let p2 = p1;
+            let p1 = tmp;
+        }
+        if (p2[1] > p3[1]) {
+            let tmp = p3;
+            let p3 = p2;
+            let p2 = tmp;
+        }
+        if (p1[1] > p2[1]) {
+            let tmp = p2;
+            let p2 = p1;
+            let p1 = tmp;
+        }
+
+        let step = color / 30 + 1;
+
+        if (p2[1] = p3[1]) {
+            do Main._fill_bottom_flat_triangle(p1, p2, p3, step);
+        } else {
+            if (p1[1] = p2[1]) {
+                do Main._fill_top_flat_triangle(p1, p2, p3, step);
+            } else {
+                let tmp = Array.new(2);
+                let tmp[0] = p1[0] + (((p3[0] - p1[0]) * (p2[1] - p1[1])) / (p3[1] - p1[1]));
+                let tmp[1] = p2[1];
+                do Main._fill_bottom_flat_triangle(p1, p2, tmp, step);
+                do Main._fill_top_flat_triangle(p2, tmp, p3, step);
+                do tmp.dispose();
+            }
+        }
+        return;
+    }
+
+    function void _fill_bottom_flat_triangle(Array p1, Array p2, Array p3,
+            int step) {
+        var int scanlineY, x1, x2;
+
+        do Screen.setColor(1);
+
+        let scanlineY = p1[1] + 1;
+        while (~(scanlineY > p2[1])) {
+            if (Utils.mod(scanlineY, step) = 0) {
+                let x1 = p1[0] + (((scanlineY - p1[1]) * (p2[0] - p1[0])) / (p2[1] - p1[1]));
+                let x2 = p1[0] + (((scanlineY - p1[1]) * (p3[0] - p1[0])) / (p3[1] - p1[1]));
+                do Screen.drawLine(x1, scanlineY, x2, scanlineY);
+            }
+            let scanlineY = scanlineY + 1;
+        }
+        return;
+    }
+
+    function void _fill_top_flat_triangle(Array p1, Array p2, Array p3,
+            int step) {
+        var int scanlineY, x1, x2;
+
+        do Screen.setColor(1);
+
+        let scanlineY = p3[1];
+        while (scanlineY > p1[1]) {
+            if (Utils.mod(scanlineY, step) = 0) {
+                let x1 = p3[0] - (((p3[1] - scanlineY) * (p3[0] - p1[0])) / (p3[1] - p1[1]));
+                let x2 = p3[0] - (((p3[1] - scanlineY) * (p3[0] - p2[0])) / (p3[1] - p2[1]));
+                do Screen.drawLine(x1, scanlineY, x2, scanlineY);
+            }
+            let scanlineY = scanlineY - 1;
+        }
+        return;
+    }
+
+    function void drawContour(Array p1, Array p2, Array p3) {
+        do Screen.setColor(1);
+        do Screen.drawLine(p1[0], p1[1], p2[0], p2[1]);
+        do Screen.drawLine(p2[0], p2[1], p3[0], p3[1]);
+        do Screen.drawLine(p3[0], p3[1], p1[0], p1[1]);
+        return;
+    }
+
+    function void drawTriangle(Array p1, Array p2, Array p3, int color) {
+        do Main.fillTriangle(p1, p2, p3, color);
+        do Main.drawContour(p1, p2, p3);
+        return;
+    }
+
+    function void draw(Scene scene) {
+        var int i, n;
+        var Array p1, p2, p3;
+        var int scale, dx, dy, color;
+
+        let dx = 256;
+        let dy = 128;
+        let scale = 80;
+
+        do Main.clear(dx, dy, scale);
+        do Output.moveCursor(0, 0);
+        do Output.printString("Use arrows to rotate");
+        do Output.println();
+        do Output.printString("(set the vm performance to Fast)");
+        do Output.println();
+
+        let n = scene.numFaces();
+        let i = 0;
+        while (i < n) {
+            if (scene.faceIsVisible(i)) {
+                let p1 = scene.project(scale, dx, dy, i, 0);
+                let p2 = scene.project(scale, dx, dy, i, 1);
+                let p3 = scene.project(scale, dx, dy, i, 2);
+
+                let color = scene.faceColor(i);
+
+                do Main.drawTriangle(p1, p2, p3, color);
+
+                do p1.dispose();
+                do p2.dispose();
+                do p3.dispose();
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+    function void main() {
+        var Scene scene;
+        var char key;
+
+        var Vector v, u;
+        var Matrix m;
+        var int one, sin, cos;
+        var int a, b;
+        var int tmp;
+
+        do Real.init();
+
+        let scene = Scene.new();
+        do Main.draw(scene);
+
+        while (true) {
+            let key = Keyboard.keyPressed();
+            if (key = 131) {  // up arrow
+                do scene.rotate_x(-1);
+                do Main.draw(scene);
+            }
+            if (key = 133) {  // down arrow
+                do scene.rotate_x(1);
+                do Main.draw(scene);
+            }
+            if (key = 130) {  // left arrow
+                do scene.rotate_y(1);
+                do Main.draw(scene);
+            }
+            if (key = 132) {  // right arrow
+                do scene.rotate_y(-1);
+                do Main.draw(scene);
+            }
+        }
+        return;
+    }
+}

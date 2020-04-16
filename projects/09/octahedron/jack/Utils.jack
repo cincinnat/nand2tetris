@@ -1,4 +1,5 @@
 class Utils {
+    // left shift
     function int lsh(int x, int n) {
         while (n > 0) {
             let x = x * 2;
@@ -7,6 +8,7 @@ class Utils {
         return x;
     }
 
+    // right shift
     function int rsh(int x, int n) {
         while (n > 0) {
             let x = x / 2;
@@ -15,7 +17,8 @@ class Utils {
         return x;
     }
 
-    function int ilog(int x) {
+    // return the minimum number of bits required to store `x`
+    function int bitsize(int x) {
         var int k;
         let k = 0;
         while (x > 0) {
@@ -23,5 +26,32 @@ class Utils {
             let k = k + 1;
         }
         return k;
+    }
+
+    // return arccos(x) / pi
+    //
+    function int arccos(int x) {
+        var int x3, x5;
+        var int _1_2, _1_pi, _1_2pi, _3_8pi;
+        var int res;
+
+        let _1_2 = 16384;  // 1/2
+        let _1_pi = 10430; // 1/2 / pi
+        let _1_2pi = 5215; // 1/2 / pi
+        let _3_8pi = 3911; // 3/8 / pi
+
+        let x3 = Real.mul(Real.mul(x, x), x);
+        let x5 = Real.mul(Real.mul(x, x), x3);
+
+        let res = _1_2;
+        let res = Real.sub(res, Real.mul(_1_pi, x));
+        let res = Real.sub(res, Real.mul(_1_2pi, x3));
+        let res = Real.sub(res, Real.mul(_3_8pi, x5));
+
+        return res;
+    }
+
+    function int mod(int a, int b) {
+        return a - ((a / b) * b);
     }
 }

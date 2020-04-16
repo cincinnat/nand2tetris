@@ -1,0 +1,199 @@
+class Scene {
+    field Array _octahedron;
+    field int _numFaces;
+    field Vector _sun;
+    field Matrix _rotation;
+
+    constructor Scene new() {
+        // the direction to the Sun ([.5, 1, 0])
+        let _sun = Vector.new(14654, 29309, 0);
+        let _rotation = Matrix.new(
+            32767, 0, 0,
+            0, 32767, 0,
+            0, 0, 32767
+        );
+
+        do _init_figure();
+        return this;
+    }
+
+    method void _init_figure() {
+        var int h, n;
+
+        let _numFaces = 8;
+        let _octahedron = Array.new(_numFaces * 4);
+        // [(v1, v2, v3, normal), ...]
+        let h = 32767; // ~1
+        let n = 18919; // l2_norm([n, n, n] == 1)
+
+        let _octahedron[0]  = Vector.new( h,  0,  0);
+        let _octahedron[1]  = Vector.new( 0,  h,  0);
+        let _octahedron[2]  = Vector.new( 0,  0,  h);
+        let _octahedron[3]  = Vector.new( n,  n,  n);
+
+        let _octahedron[4]  = Vector.new( h,  0,  0);
+        let _octahedron[5]  = Vector.new( 0,  0,  h);
+        let _octahedron[6]  = Vector.new( 0, -h,  0);
+        let _octahedron[7]  = Vector.new( n, -n,  n);
+
+        let _octahedron[8]  = Vector.new( h,  0,  0);
+        let _octahedron[9]  = Vector.new( 0,  0, -h);
+        let _octahedron[10] = Vector.new( 0,  h,  0);
+        let _octahedron[11] = Vector.new( n,  n, -n);
+
+        let _octahedron[12] = Vector.new( h,  0,  0);
+        let _octahedron[13] = Vector.new( 0, -h,  0);
+        let _octahedron[14] = Vector.new( 0,  0, -h);
+        let _octahedron[15] = Vector.new( n, -n, -n);
+
+        let _octahedron[16] = Vector.new(-h,  0,  0);
+        let _octahedron[17] = Vector.new( 0,  0,  h);
+        let _octahedron[18] = Vector.new( 0,  h,  0);
+        let _octahedron[19] = Vector.new(-n,  n,  n);
+
+        let _octahedron[20] = Vector.new(-h,  0,  0);
+        let _octahedron[21] = Vector.new( 0, -h,  0);
+        let _octahedron[22] = Vector.new( 0,  0,  h);
+        let _octahedron[23] = Vector.new(-n, -n,  n);
+
+        let _octahedron[24] = Vector.new(-h,  0,  0);
+        let _octahedron[25] = Vector.new( 0,  h,  0);
+        let _octahedron[26] = Vector.new( 0,  0, -h);
+        let _octahedron[27] = Vector.new(-n,  n, -n);
+
+        let _octahedron[28] = Vector.new(-h,  0,  0);
+        let _octahedron[29] = Vector.new( 0,  0, -h);
+        let _octahedron[30] = Vector.new( 0, -h,  0);
+        let _octahedron[31] = Vector.new(-n, -n, -n);
+
+        return;
+    }
+
+    method void dispose() {
+        var int i;
+        var Vector tmp;
+
+        let i = 0;
+        while (i < _numFaces * 4) {
+            let tmp = _octahedron[i];
+            do tmp.dispose();
+            let i = i + 1;
+        }
+        do _octahedron.dispose();
+        do _sun.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void _rotate(Matrix m) {
+        var int i;
+        var Matrix tmp;
+
+        let tmp = _rotation;
+        let _rotation = m.matmul(_rotation);
+        do tmp.dispose();
+        return;
+    }
+
+    // rotate around the X axis by 10 degrees
+    //
+    method void rotate_x(int direction) {
+        var int sin, cos, one;
+        var Matrix m;
+
+        let one = 32767;
+        let sin = 5690;   // sin(10 deg)
+        let cos = 32270;  // cos(10 deg)
+        if (direction < 0) {
+            let sin = -sin;
+        }
+
+        let m = Matrix.new(
+            one, 0,   0,
+            0,   cos, -sin,
+            0,   sin, cos
+        );
+
+        do _rotate(m);
+        do m.dispose();
+        return;
+    }
+
+    // rotate around the Y axis by 10 degrees
+    //
+    method void rotate_y(int direction) {
+        var int sin, cos, one;
+        var Matrix m;
+
+        let one = 32767;
+        let sin = 5690;   // sin(10 deg)
+        let cos = 32270;  // cos(10 deg)
+        if (direction < 0) {
+            let sin = -sin;
+        }
+
+        let m = Matrix.new(
+            cos, 0,   -sin,
+            0,   one, 0,
+            sin, 0,   cos
+        );
+
+        do _rotate(m);
+        do m.dispose();
+        return;
+    }
+
+    // return the number of faces in the figure
+    method int numFaces() {
+        return _numFaces;
+    }
+
+    // project a vertex to the XY plane
+    //
+    method Array project(int scale, int dx, int dy, int face, int vertex) {
+        var Vector v;
+        var Array p;
+
+        let v = _octahedron[(face * 4) + vertex];
+        let v = _rotation.mul(v);
+
+        let p = Array.new(2);
+        let p[0] = dx + Real.scale(v.getX(), scale);
+        let p[1] = dy - Real.scale(v.getY(), scale);
+        do v.dispose();
+
+        return p;
+    }
+    
+    // return true if `face` is visible, i.e. is not hidden behind other faces
+    //
+    method boolean faceIsVisible(int face) {
+        var Vector n;
+        var boolean res;
+
+        let n = _octahedron[(face * 4) + 3];
+        let n = _rotation.mul(n);
+        /*let res = ~(n.getZ() < -300);*/
+        let res = ~(n.getZ() < 0);
+        do n.dispose();
+        return res;
+    }
+
+    // return the face's color in the range [0, 256) depending on the
+    // angle between the face normal and the direction to the Sun.
+    //
+    method int faceColor(int face) {
+        var Vector n;
+        var int color;
+
+        let n = _octahedron[(face * 4) + 3];
+        let n = _rotation.mul(n);
+
+        // acos(n*_sun) / pi
+        let color = Utils.arccos(n.dot(_sun));
+        do n.dispose();
+
+        let color = Real.scale(color, 256);
+        return 256 - color;
+    }
+}

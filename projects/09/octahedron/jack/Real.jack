@@ -1,79 +1,96 @@
 class Real {
-    /* A fixed point real number (aka Qm.n, Q0.15 in our case)
+    /* A fixed point real number (aka Qm.n, Q0.15 in our case).
      *
      * Supports real numbers in the range [-1, 1) with precision 1/2^15.
+     * Real provides a set of methods for manipulation of "real" numbers
+     * instead of encapsulating the value field because otherwise the memory
+     * management would become rather cumbersome (unfortunately, jack lacks
+     * any kind of automatic memory management).
+     *
+     * For a float value `x` its fixed point representations is computed as
+     * follows:
+     *    real = x * 2^n
      */
-    field int value;
-    field int m;
-    field int n;
+    static int m;
+    static int n;
 
-    // for a float `x` value is computes as follows:
-    //     value = x * 2^n
-    constructor Real new(int value) {
+    function void init() {
         let m = 0;
         let n = 15;
-        let value = value;
-        return this;
-    }
-
-    method void dispose() {
-        do Memory.deAlloc(this);
         return;
     }
 
-    method int getValue() {
-        return value;
-    }
-
     // return the sum of two real numbers, can overflow
-    method Real add(Real other) {
-        var int val;
-        let val = value + other.getValue();
-        return Real.new(value);
+    function int add(int a, int b) {
+        return a + b;
     }
 
     // return the difference of two real numbers, can overflow
-    method Real sub(Real other) {
-        var int val;
-        let val = value - other.getValue();
-        return Real.new(value);
+    function int sub(int a, int b) {
+        return a - b;
     }
 
     // return the multiplication of two real numbers,
-    // never overflow in our case (since all numbers have the absolute value
+    // never overflow in our case (since all numbers have their absolute value
     // not greater than 1)
-    method Real mul(Real other) {
-        var int val;
+    function int mul(int a, int b) {
+        var int a_bits, b_bits, free_bits, k;
+        var boolean neg;
+        var int res;
 
-        // (x * y) / 2^n
-        let val = Utils.rsh(value, n/2) * Utils.rsh(other.getValue(), n - n/2);
-        return Real.new(val);
+        // We are calculating the folloing value:
+        //     (a * b) >> n
+
+        let neg = false;
+        if (a < 0) {
+            let a = -a;
+            let neg = ~neg;
+        }
+        if (b < 0) {
+            let b = -b;
+            let neg = ~neg;
+        }
+
+        let a_bits = Utils.bitsize(a);
+        let b_bits = Utils.bitsize(b);
+        let free_bits = 30 - a_bits - b_bits;
+        if (n > free_bits) {
+            let k = n - free_bits;
+        } else {
+            let k = 0;
+        }
+
+        let a = Utils.rsh(a, k/2);
+        let b = Utils.rsh(b, k - (k/2));
+        let res = Utils.rsh(a * b, n - k);
+        if (neg) {
+            let res = -res;
+        }
+        return res;
     }
 
-    method Real neg() {
-        return Real.new(-value);
-    }
-
-    // return int(x * this)
-    method int scale(int x) {
+    // return int(factor * value), where `factor` is a "real" value
+    //
+    function int scale(int factor, int value) {
         var int k, res;
-        let k = Utils.ilog(value);
 
         // negative values are not supported
-        if ((x < 0) | (value < 0)) {
+        if (value < 0) {
             return 0;
         }
 
-        // 1. transform Qm.n -> Q(2k).(15-2k), so we will have `k` free bits
-        //    (and loose 2k less important bits)
-        // 2. mutiply x * value, the result will be in Q(3k)(15-2k), while
+        let k = Utils.bitsize(value);
+
+        // 1. transform Qm.n -> Q(k).(15-k), so we will have `k` free bits
+        //    (while losing k less important bits)
+        // 2. mutiply x * _value, the result will be in Q(2k)(15-k), while
         //    `k` most improtant bits will be lost, the previous step ensures
         //    that they are zeros aniway. After the interger overflow we
-        //    have got a Q(2k).(15-2k) real number again.
+        //    have got a Q(k).(15-k) real number again.
         // 3. cast it to an interger value (i.e. to Q15.0).
-        let res = Utils.rsh(value, 2*k-m);
-        let res = res * x;
-        let res = Utils.rsh(res, 15-2*k);
+        let res = Utils.rsh(factor, k - m);
+        let res = res * value;
+        let res = Utils.rsh(res, 15 - k);
 
         return res;
     }

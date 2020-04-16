@@ -1,0 +1,49 @@
+/* A real valued 3d vector class (i.e., all values are assumed
+ * to be of the "real" type).
+ */
+class Vector {
+    field int _x;
+    field int _y;
+    field int _z;
+
+    constructor Vector new(int x, int y, int z) {
+        let _x = x;
+        let _y = y;
+        let _z = z;
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int getX() { return _x; }
+    method int getY() { return _y; }
+    method int getZ() { return _z; }
+
+    method void setX(int x) { let _x = x; return; }
+    method void setY(int y) { let _y = y; return; }
+    method void setZ(int z) { let _z = z; return; }
+
+    method int get(int i) {
+        var Array a;
+        let a = this;
+        return a[i];
+    }
+
+    method void set(int i, int v) {
+        var Array a;
+        let a = this;
+        let a[i] = v;
+        return;
+    }
+
+    method Vector dot(Vector other) {
+        var int res;
+        let res = Real.mul(_x, other.getX());
+        let res = res + Real.mul(_y, other.getY());
+        let res = res + Real.mul(_x, other.getZ());
+        return res;
+    }
+}
