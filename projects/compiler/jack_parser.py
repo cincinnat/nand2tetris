@@ -28,6 +28,7 @@ def write_tokens(tokens, path):
 
 class XMLgenerator(Visitor):
     def __init__(self, fobj):
+        super().__init__()
         self.fobj = fobj
         self._depth = 0
 
@@ -64,7 +65,7 @@ class XMLgenerator(Visitor):
     def visit_symbol(self, node, children):
         self._visit(node, node.name, utils.xml_symbol(node.value), None)
 
-    def defatul_visit(self, node, children):
+    def default_visit(self, node, children):
         self._visit(node, node.name, node.value, children)
 
 

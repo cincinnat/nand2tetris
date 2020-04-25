@@ -1,3 +1,4 @@
+import itertools
 
 class Node:
     def __init__(self, parent, name, value):
@@ -8,6 +9,9 @@ class Node:
 
         if parent is not None:
             parent.children.append(self)
+
+    def remove(self, child):
+        self.children = [c for c in self.children if c != child]
 
     def print(self):
         def print_node(depth, node):
@@ -22,15 +26,19 @@ class Node:
         return 1 + self.parent.depth()
 
 
-def visit(root, visitor):
-    return visitor(root, (visit(child, visitor) for child in root.children))
-
-
 class Visitor:
-    def visit(self, root):
-        handler = getattr(self, 'visit_' + root.name, self.defatul_visit)
-        handler(root, (self.visit(child) for child in root.children))
+    def __init__(self, generator=False):
+        self._generator = generator
 
-    def defatul_visit(self, node, children):
+    def visit(self, root):
+        handler = getattr(self, 'visit_' + root.name, self.default_visit)
+        # print(' ' * root.depth() * 4, root.name, root.value)
+
+        children = (self.visit(child) for child in root.children)
+        if self._generator:
+            children = itertools.chain.from_iterable(children)
+        return handler(root, children)
+
+    def default_visit(self, node, children):
         list(children)
         return node

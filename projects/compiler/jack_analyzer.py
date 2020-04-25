@@ -144,10 +144,14 @@ class Analyzer:
     def subroutine_body(self):
         self._expect('{')
         self.var_decs()
-        self.statements()
+        self.subroutine_body_statements()
         self._expect('}')
 
-    @_node(inline=True)
+    @_node()
+    def subroutine_body_statements(self):
+        self.statements()
+
+    @_node()
     def var_decs(self):
         while self._token.value == 'var':
             self.var_dec()
@@ -181,12 +185,33 @@ class Analyzer:
     def let_statement(self):
         self._expect('let')
         self.var_name()
-        if self._accept('['):
-            self.expression()
-            self._expect(']')
+        last_identifier = self._cur.children[-1]
+        if self._token.value == '[':
+            self.array_assignment(adopt_child=last_identifier)
+        else:
+            self.assignment(adopt_child=last_identifier)
+
+    @_node()
+    def array_assignment(self, adopt_child):
+        self._adopt_child(adopt_child)
+        self._expect('[')
+        self.index_expression()
+        self._expect(']')
+        self._expr_rhs()
+
+    @_node()
+    def assignment(self, adopt_child):
+        self._adopt_child(adopt_child)
+        self._expr_rhs()
+
+    def _expr_rhs(self):
         self._expect('=')
         self.expression()
         self._expect(';')
+
+    @_node()
+    def index_expression(self):
+        self.expression()
 
     @_node()
     def expression(self):
@@ -195,6 +220,17 @@ class Analyzer:
             self.binary_op()
             self.term()
 
+        if len(self._cur.children) == 3:  # term op term
+            assert self._cur.children[1].name == 'binary_op'
+            self._pivot_node(self._cur.children[1])
+
+    def _pivot_node(self, node):
+        children = self._cur.children
+        self._cur.children = [node]
+        for child in children:
+            if child != node:
+                child.parent = node
+                node.children.append(child)
 
     @_node()
     def term(self):
@@ -206,18 +242,29 @@ class Analyzer:
             self.constant()
         elif self._token.type == 'identifier':
             self.identifier()
-            if self._accept('.'):
-                self.subroutine_call()
-            elif self._accept('['):
-                if not self._accept(']'):
-                    self.expression()
-                    self._expect(']')
+            last_identifier = self._cur.children[-1]
+            if self._token.value in '.(':
+                self.subroutine_call(adopt_child=last_identifier)
+            elif self._token.value == '[':
+                self.array_access(adopt_child=last_identifier)
         elif self._accept('('):
             self.expression()
             self._expect(')')
         else:
             self.unary_op()
             self.term()
+            self._pivot_node(self._cur.children[0])
+
+    @_node()
+    def array_access(self, adopt_child=None):
+        if adopt_child is None:
+            self.identifier()
+        else:
+            self._adopt_child(adopt_child)
+        self._expect('[')
+        self.expression()
+        self._expect(']')
+
 
     @_node(inline=True)
     def constant(self):
@@ -231,11 +278,11 @@ class Analyzer:
     def string_const(self):
         self._next()
 
-    @_node(inline=True)
+    @_node()
     def unary_op(self):
         self._expect(*unary_ops)
 
-    @_node(inline=True)
+    @_node()
     def binary_op(self):
         self._expect(*binary_ops)
 
@@ -245,14 +292,22 @@ class Analyzer:
         self.subroutine_call()
         self._expect(';')
 
-    @_node(inline=True)
-    def subroutine_call(self):
-        self.identifier()
-        while self._accept('.'):
+    @_node()
+    def subroutine_call(self, adopt_child=None):
+        if adopt_child is None:
+            self.identifier()
+        else:
+            self._adopt_child(adopt_child)
+        if self._accept('.'):
             self.identifier()
         self._expect('(')
         self.expression_list()
         self._expect(')')
+
+    def _adopt_child(self, node):
+        node.parent.remove(node)
+        self._cur.children.append(node)
+        node.parent = self._cur
 
     @_node()
     def expression_list(self):
@@ -274,12 +329,24 @@ class Analyzer:
     @_node()
     def if_statement(self):
         self._expect('if')
+        self.if_condition()
+        self.if_body()
+        self.else_body()
+
+    @_node()
+    def if_condition(self):
         self._expect('(')
         self.expression()
         self._expect(')')
+
+    @_node()
+    def if_body(self):
         self._expect('{')
         self.statements()
         self._expect('}')
+
+    @_node()
+    def else_body(self):
         if self._accept('else'):
             self._expect('{')
             self.statements()
@@ -288,9 +355,17 @@ class Analyzer:
     @_node()
     def while_statement(self):
         self._expect('while')
+        self.while_condition()
+        self.while_body()
+
+    @_node()
+    def while_condition(self):
         self._expect('(')
         self.expression()
         self._expect(')')
+
+    @_node()
+    def while_body(self):
         self._expect('{')
         self.statements()
         self._expect('}')
