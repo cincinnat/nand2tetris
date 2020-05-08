@@ -8,40 +8,111 @@
  * Note: Jack compilers implement multiplication and division using OS method calls.
  */
 class Math {
+    static Array bitmask;
 
     /** Initializes the library. */
     function void init() {
+        var int i, mask;
+        let bitmask = Array.new(16);
+        let i = 0;
+        let mask = 1;
+        while (i < 16) {
+            let bitmask[i] = mask;
+            let mask = mask + mask;
+            let i = i + 1;
+        }
+        return;
     }
 
     /** Returns the absolute value of x. */
     function int abs(int x) {
+        if (x < 0) {
+            return -x;
+        }
+        return x;
     }
 
-    /** Returns the product of x and y. 
-     *  When a Jack compiler detects the multiplication operator '*' in the 
+    /** Returns the product of x and y.
+     *  When a Jack compiler detects the multiplication operator '*' in the
      *  program's code, it handles it by invoking this method. In other words,
      *  the Jack expressions x*y and multiply(x,y) return the same value.
      */
     function int multiply(int x, int y) {
+        var int product, i;
+        let product = 0;
+        let i = 0;
+        while (i < 16) {
+            if (y & bitmask[i]) {
+                let product = product + x;
+            }
+            let x = x + x;
+            let i = i + 1;
+        }
+        return product;
     }
 
     /** Returns the integer part of x/y.
-     *  When a Jack compiler detects the multiplication operator '/' in the 
+     *  When a Jack compiler detects the multiplication operator '/' in the
      *  program's code, it handles it by invoking this method. In other words,
      *  the Jack expressions x/y and divide(x,y) return the same value.
      */
+    function int _divide(int x, int y) {
+        var int q;
+
+        // y < 0 indicates the arithmetic overflow in the recurcive call below
+        if ((y > x) | (y < 0)) {
+            return 0;
+        }
+        let q = 2 * Math._divide(x, 2 * y);
+        if ((x - (q * y)) <  y) {
+            return q;
+        }
+        return q + 1;
+    }
+
     function int divide(int x, int y) {
+        var int sign;
+        let sign = 1;
+        if (x < 0) {
+            let sign = -sign;
+        }
+        if (y < 0) {
+            let sign = -sign;
+        }
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+        return sign * Math._divide(x, y);
     }
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
+        var int i, y, new_y, y_sqr;
+        let y = 0;
+        let i = 7; // 16 / 2 - 1
+        while (~(i < 0)) {
+            let new_y = y + bitmask[i];
+            let y_sqr = new_y * new_y; // can overflow, thus the condition below
+            if (~(y_sqr > x) & (y_sqr > 0)) {
+                let y = new_y;
+            }
+            let i = i - 1;
+        }
+        return y;
     }
 
     /** Returns the greater number. */
     function int max(int a, int b) {
+        if (a < b) {
+            return b;
+        }
+        return a;
     }
 
     /** Returns the smaller number. */
     function int min(int a, int b) {
+        if (a > b) {
+            return b;
+        }
+        return a;
     }
 }

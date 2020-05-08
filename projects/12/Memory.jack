@@ -7,28 +7,75 @@
  * This library provides two services: direct access to the computer's main
  * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
  * consists of 32,768 words, each holding a 16-bit binary number.
- */ 
+ */
 class Memory {
+    static Array ram;
+    static Array heap;
+    static Array freeList;
 
     /** Initializes the class. */
     function void init() {
+        let ram = 0;
+        let heap = 2048;
+        let heap[0] = 0;
+        let heap[1] = 14335;
+        let freeList = heap;
+        return;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
+    }
+
+    function Array _findBlock(int size) {
+        var Array node;
+        let node = freeList;
+        while (true) {
+            if (node[1] > (size + 1)) {
+                return node;
+            }
+            if (node[0] = freeList) {  // the last block in the list
+                do Sys.error(1);  // there is no sufficiently large block
+            }
+            let node = node[0];
+        }
+        return null;  // unreachable
+    }
+
+    function void _insert(Array pos, Array block) {
+        let block[0] = pos[0];
+        let pos[0] = block;
+        return;
+    }
+
+    function Array _split(Array block, int size) {
+        var Array node;
+        let node = block + (block[1] - size);
+        let block[1] = block[1] - size;
+        return node;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
+        var Array block, allocated_block;
+
+        let block = Memory._findBlock(size + 2);
+        let allocated_block = Memory._split(block, size + 2);
+        return allocated_block + 2;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
-    }    
+        do Memory._insert(freeList, o);
+        return;
+    }
 }
